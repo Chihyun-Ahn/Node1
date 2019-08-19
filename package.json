@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "fs": "0.0.1-security",
+    "math": "0.0.3",
     "node-dht-sensor": "^0.3.0",
     "socketcan": "^2.4.0"
   }
