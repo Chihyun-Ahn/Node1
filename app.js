@@ -80,7 +80,6 @@ setInterval(function(){
     sensorData.humidity1    = sensor.sensors[0].humidity;
     sensorData.humidity2    = sensor.sensors[1].humidity;
     sensorData.sigTime      = getTimeInt();
-
     console.log(sensorData.sigTime);
 
     db.messages["House1Stat"].signals["temperature1"].update(sensorData.temperature1);
@@ -89,12 +88,10 @@ setInterval(function(){
     db.messages["House1Stat"].signals["humidity2"].update(sensorData.humidity2);
     db.messages["House1Stat"].signals["sigTime"].update(sensorData.sigTime);
     
-    console.log(db.messages["House1Stat"].signals["sigTime"].value);
-    
     // Trigger sending this message
     db.send("House1Stat");
 
-}, 6000);
+}, 10000);
 
 function getTimeInt(){
     var now = new Date();
