@@ -76,7 +76,8 @@ setInterval(function(){
     sensorData.humidity1    = sensor.sensors[0].humidity;
     sensorData.humidity2    = sensor.sensors[1].humidity;
     sensorData.sigTime      = getTimeInt();
-    console.log(sensorData.sigTime);
+    console.log('house1 humid2:'+sensorData.humidity2);
+    // console.log(sensorData.sigTime);
 
     db.messages["House1Stat"].signals["temperature1"].update(sensorData.temperature1);
     db.messages["House1Stat"].signals["temperature2"].update(sensorData.temperature2);
