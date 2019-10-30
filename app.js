@@ -1,3 +1,12 @@
+var gpio = require('onoff').Gpio;
+const IOfan1 = new gpio(16, 'out');
+const IOfan2 = new gpio(20, 'out');
+const IOfan3 = new gpio(5, 'out');
+const IOwater = new gpio(6, 'out');
+const IOalarm = new gpio(13, 'out');
+const HIGH = 1;
+const LOW = 0;
+
 var exec = require('child_process').exec;
 
 // Activate real canbus: can0
@@ -46,6 +55,34 @@ var sensor = {
             pin: 3,
             temperature: 0,
             humidity: ""    
+        },
+        {
+            name: "House1Sen3",
+            type: 11,
+            pin: 4,
+            temperature: 0,
+            humidity: ""
+        },
+        {
+            name: "House1Sen4",
+            type: 11,
+            pin: 17,
+            temperature: 0,
+            humidity: ""    
+        },
+        {
+            name: "House1Sen5",
+            type: 11,
+            pin: 27,
+            temperature: 0,
+            humidity: ""
+        },
+        {
+            name: "House1Sen6",
+            type: 11,
+            pin: 22,
+            temperature: 0,
+            humidity: ""    
         }
     ],
     read: function(){
@@ -63,38 +100,47 @@ var sensor = {
 //Main function. Send sensor values, and get control data
 setInterval(function(){
     sensor.read();
-    var sensorData = {
-        temperature1 : 0,
-        temperature2 : 0,
-        humidity1: "",
-        humidity2: "",
-        sigTime: ""
-    };
 
-    sensorData.temperature1 = sensor.sensors[0].temperature;
-    sensorData.temperature2 = sensor.sensors[1].temperature;
-    sensorData.humidity1    = sensor.sensors[0].humidity;
-    sensorData.humidity2    = sensor.sensors[1].humidity;
-    sensorData.sigTime      = getTimeInt();
-    console.log('house1 humid2:'+sensorData.humidity2);
-    // console.log(sensorData.sigTime);
+    db.messages["House1Temp"].signals["temperature1"].update(sensor.sensors[0].temperature);
+    db.messages["House1Temp"].signals["temperature2"].update(sensor.sensors[1].temperature);
+    db.messages["House1Temp"].signals["temperature3"].update(sensor.sensors[2].temperature);
+    db.messages["House1Temp"].signals["temperature4"].update(sensor.sensors[3].temperature);
+    db.messages["House1Temp"].signals["temperature5"].update(sensor.sensors[4].temperature);
+    db.messages["House1Temp"].signals["temperature6"].update(sensor.sensors[5].temperature);
+    db.messages["House1TempTime"].signals["sigTime"].update(getTimeInt());
 
-    db.messages["House1Stat"].signals["temperature1"].update(sensorData.temperature1);
-    db.messages["House1Stat"].signals["temperature2"].update(sensorData.temperature2);
-    db.messages["House1Stat"].signals["humidity1"].update(sensorData.humidity1);
-    db.messages["House1Stat"].signals["humidity2"].update(sensorData.humidity2);
-    db.messages["House1Stat"].signals["sigTime"].update(sensorData.sigTime);
+    db.messages["House1Humid"].signals["humidity1"].update(sensor.sensors[0].humidity);
+    db.messages["House1Humid"].signals["humidity2"].update(sensor.sensors[1].humidity);
+    db.messages["House1Humid"].signals["humidity3"].update(sensor.sensors[2].humidity);
+    db.messages["House1Humid"].signals["humidity4"].update(sensor.sensors[3].humidity);
+    db.messages["House1Humid"].signals["humidity5"].update(sensor.sensors[4].humidity);
+    db.messages["House1Humid"].signals["humidity6"].update(sensor.sensors[5].humidity);
+    db.messages["House1HumidTime"].signals["sigTime"].update(getTimeInt());
+
+   //Trigger sending messages
+   db.send("House1Temp");
+   db.send("House1Humid");
+   db.send("House1TempTime");
+   db.send("House1TempTime");
     
-    // Trigger sending this message
-    db.send("House1Stat");
+
+    for(i=0;i<6;i++){
+        console.log(`센서${i+1}의 온도: ${sensor.sensors[i].temperature} 습도: ${sensor.sensors[i].humidity}`);
+    }
 
     // Control Data
     console.log(ctrlData.fan1);
+
+    //콘트롤 데이터 확인하여, 제어출력
+    IOfan1.writeSync(ctrlData.fan1);
+    IOfan2.writeSync(ctrlData.fan2);
+    IOfan3.writeSync(ctrlData.fan3);
+    IOwater.writeSync(ctrlData.water);
+    IOalarm.writeSync(ctrlData.alarm);
 }, 10000);
 
 db.messages["House1Ctrl"].signals["fan1"].onUpdate(function(s){
     ctrlData.fan1 = s.value;
-    console.log('fan1 State: '+ctrlData.fan1);
 });
 db.messages["House1Ctrl"].signals["fan2"].onUpdate(function(s){
     ctrlData.fan2 = s.value;
@@ -111,6 +157,6 @@ db.messages["House1Ctrl"].signals["alarm"].onUpdate(function(s){
 
 function getTimeInt(){
     var now = new Date();
-    var nowInt = math.floor(now/1000);
+    var nowInt = now * 1;
     return nowInt;
 }
