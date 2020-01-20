@@ -45,42 +45,42 @@ var sensor = {
     sensors : [
         {
             name: "House1Sen1",
-            type: 11,
+            type: 22,
             pin: 2,
             temperature: 0,
             humidity: ""
         },
         {
             name: "House1Sen2",
-            type: 11,
+            type: 22,
             pin: 3,
             temperature: 0,
             humidity: ""    
         },
         {
             name: "House1Sen3",
-            type: 11,
+            type: 22,
             pin: 4,
             temperature: 0,
             humidity: ""
         },
         {
             name: "House1Sen4",
-            type: 11,
+            type: 22,
             pin: 17,
             temperature: 0,
             humidity: ""    
         },
         {
             name: "House1Sen5",
-            type: 11,
+            type: 22,
             pin: 27,
             temperature: 0,
             humidity: ""
         },
         {
             name: "House1Sen6",
-            type: 11,
+            type: 22,
             pin: 22,
             temperature: 0,
             humidity: ""    
@@ -126,17 +126,18 @@ function setNeighborDeadTimer(){
         console.log('!!WARNING!!Your neighbor is not responding for 30s.');
         var i = 1;
         db.send("AliveCheckByH1");
-        console.log('Probe'+i+' has been sent.');
+        console.log('Probe '+i+' has been sent.');
         sendProbe = setInterval(function(){
             i++;
             if(i<=3){
+                commState.H1H2 = LOW;
                 db.send("AliveCheckByH1");
-                console.log('Probe'+i+' has been sent');
+                console.log('Probe '+i+' has been sent');
             }else if(i>3 && i<6){
                 commState.H1H2 = LOW;
                 db.messages['H2StateByH1'].signals['state'].update(commState.H1H2);
                 db.send('H2AskingByH1');
-                console.log('Probe'+(i-3)+'has been sent to the Fog.');
+                console.log('Probe '+(i-3)+' has been sent to the Fog.');
             }else if(i>=6){
                 commState.H2Fog = LOW;
                 clearInterval(sendProbe);
@@ -152,6 +153,7 @@ db.messages["House2Temp"].signals["temperature2"].onUpdate(function(){
         commState.H1H2 = HIGH;
     }
     clearTimeout(NeighborDeadTimer);
+    clearInterval(sendProbe);
     console.log('Timer cleared.');
     setNeighborDeadTimer();
 });
@@ -176,7 +178,8 @@ db.messages["AliveAnsByH2"].signals["nodeID"].onUpdate(function(){
 });
 
 db.messages['H2StateByFog'].signals['state'].onUpdate(function(s){
-    commState.H2Fog = s;
+    console.log('H2StateByFog: '+ s.value);
+    commState.H2Fog = s.value;
     if(commState.H2Fog == HIGH){
         console.log('House1-House2 CAN communication error.');
         clearInterval(sendProbe);
@@ -210,8 +213,8 @@ function putSensorData(houseName){
     for(i=0;i<6;i++){
         var tempNameSpecific = tempNameGeneral + (i+1);
         var humidNameSpecific = humidNameGeneral + (i+1);
-        db.messages[houseTemp].signals[tempNameSpecific].update(sensor.sensors[i].temperature);
-        db.messages[houseHumid].signals[humidNameSpecific].update(sensor.sensors[i].humidity);
+        db.messages[houseTemp].signals[tempNameSpecific].update(sensor.sensors[i].temperature*10);
+        db.messages[houseHumid].signals[humidNameSpecific].update(sensor.sensors[i].humidity*10);
     }
     db.messages[houseMsgTime].signals["sigTime"].update(timeGetter.now());
     console.log(houseMsgTime + ":" + db.messages[houseMsgTime].signals["sigTime"].value);
