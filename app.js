@@ -10,6 +10,10 @@ const LOW = 0;
 
 var exec = require('child_process').exec;
 
+var timeDiff = [0,0,0,0,0,0,0,0,0,0]; //For time synching
+var timeDiffSum = 0;
+var timeDiffAvg = 0;
+
 // Activate real canbus: can0
 exec("sudo ip link set can0 up type can bitrate 500000", function(err, stdout, stderr){
     console.log('Activating can0... ');
@@ -95,7 +99,8 @@ var sensor = {
     }
 };
 
-//Main function. Send sensor values, and get control data
+//###########################################################
+//########################Main func. setInterval#############
 setInterval(function(){
     sensor.read();
     putSensorData("House1");
@@ -118,6 +123,46 @@ setInterval(function(){
 
     getCtrlData("House1");
 }, 10000);
+
+//###########################################################
+//#########################Time Sync#########################
+
+var time1, time2, rtt, oneWayDelay, fogRcvTime;
+setInterval(function(){
+   time1 = timeGetter.nowMilli();
+   db.messages['timeSyncReqH2'].signals['sigTime'].update(time1);
+   db.send('timeSyncReqH2');
+}, 4500);
+
+db.messages['timeSyncResFog'].signals['sigTime'].onUpdate(function(s){
+   time2 = timeGetter.nowMilli();
+   fogRcvTime = s.value;
+   rtt = time2 - time1;
+   oneWayDelay = Math.round(rtt / 2.0);
+   var estimatedFogTime = time1 + oneWayDelay;
+   var timediff = estimatedFogTime - fogRcvTime;
+
+   for(i=0;i<timeDiff.length;i++){
+      if(i!=timeDiff.length-1){
+          timeDiff[i] = timeDiff[i+1];
+      }else if(i==timeDiff.length-1){
+          timeDiff[i] = timediff;
+      }
+   }
+   timeDiffSum = 0;
+   for(i=0;i<timeDiff.length;i++){
+      timeDiffSum += timeDiff[i];
+   }
+
+   timeDiffAvg = Math.round((timeDiffSum/(1.0*timeDiff.length)));
+   
+   console.log('Departure time: '+time1+' Arrival time: '+time2+' oneWayDelay: '+oneWayDelay);
+   console.log('Fog received time: '+fogRcvTime+' Estimated fog rcv time: '+estimatedFogTime);
+   console.log('Time difference: '+timediff+' timeDiffSum: '+timeDiffSum+' timeDiff: '+timeDiff+' timeDiffAvg: '+timeDiffAvg);
+});
+
+//###########################################################
+//########################Resilience#########################
 
 setNeighborDeadTimer();
 
@@ -202,6 +247,9 @@ db.messages['AliveCheckH1ByFog'].signals['nodeID'].onUpdate(function(){
     db.send('AliveAnsToFogByH1');
 });
 
+//###########################################################
+//########################Functions to call##################
+
 function putSensorData(houseName){
     var houseTemp = houseName + "Temp";
     var houseHumid = houseName + "Humid";
@@ -213,7 +261,8 @@ function putSensorData(houseName){
     for(i=0;i<6;i++){
         var tempNameSpecific = tempNameGeneral + (i+1);
         var humidNameSpecific = humidNameGeneral + (i+1);
-        db.messages[houseTemp].signals[tempNameSpecific].update(sensor.sensors[i].temperature*10);
+           
+         e(sensor.sensors[i].temperature*10);
         db.messages[houseHumid].signals[humidNameSpecific].update(sensor.sensors[i].humidity*10);
     }
     db.messages[houseMsgTime].signals["sigTime"].update(timeGetter.now());
