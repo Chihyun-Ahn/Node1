@@ -54,14 +54,14 @@ function convertToMilli(time){
 
 function millToTime(miltime){
     var imsi;
-    var hour = miltime/3600000;
+    var hour = parseInt(miltime/3600000);
     imsi = miltime%3600000;
-    var min = imsi/60000;
+    var min = parseInt(imsi/60000);
     imsi = imsi%60000;
-    var sec = imsi/1000;
+    var sec = parseInt(imsi/1000);
     imsi = imsi%1000;
     var milli = imsi;
-    var result = addZero(hour)+':'+addZero(min)+':'+addZero(sec)+':'+addZeroMilli(milli);
+    var result = addZero(hour)+addZero(min)+addZero(sec)+addZeroMilli(milli);
     return result;
 }
 

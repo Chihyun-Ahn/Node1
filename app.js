@@ -130,11 +130,11 @@ setInterval(function(){
 var time1, time2, rtt, oneWayDelay, fogRcvTime;
 setInterval(function(){
    time1 = timeGetter.nowMilli();
-   db.messages['timeSyncReqH2'].signals['sigTime'].update(time1);
-   db.send('timeSyncReqH2');
+   db.messages['timeSyncReqH1'].signals['sigTime'].update(time1);
+   db.send('timeSyncReqH1');
 }, 4500);
 
-db.messages['timeSyncResFog'].signals['sigTime'].onUpdate(function(s){
+db.messages['timeSyncResFogH1'].signals['sigTime'].onUpdate(function(s){
    time2 = timeGetter.nowMilli();
    fogRcvTime = s.value;
    rtt = time2 - time1;
@@ -254,7 +254,6 @@ function putSensorData(houseName){
     var houseTemp = houseName + "Temp";
     var houseHumid = houseName + "Humid";
     var houseMsgTime = houseName + "MsgTime";
-
     var tempNameGeneral = "temperature";
     var humidNameGeneral = "humidity";
     var i;
@@ -262,10 +261,11 @@ function putSensorData(houseName){
         var tempNameSpecific = tempNameGeneral + (i+1);
         var humidNameSpecific = humidNameGeneral + (i+1);
            
-         e(sensor.sensors[i].temperature*10);
+        db.messages[houseTemp].signals[tempNameSpecific].update(sensor.sensors[i].temperature*10);
         db.messages[houseHumid].signals[humidNameSpecific].update(sensor.sensors[i].humidity*10);
     }
-    db.messages[houseMsgTime].signals["sigTime"].update(timeGetter.now());
+    var nowTime = timeGetter.nowMilli()+timeDiffAvg;
+    db.messages[houseMsgTime].signals["sigTime"].update(nowTime);
     console.log(houseMsgTime + ":" + db.messages[houseMsgTime].signals["sigTime"].value);
 }
 
