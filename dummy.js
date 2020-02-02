@@ -103,8 +103,8 @@ var sensor = {
 
 setInterval(function(){
    sensor.read();  
-   putSensorData("House1");
-   sendSensorData("House1");
+   putSensorData("House2");
+   sendSensorData("House2");
 
    for(i=0;i<6;i++){
       console.log(`센서${i+1}의 온도: ${sensor.sensors[i].temperature} 습도: ${sensor.sensors[i].humidity}`);
@@ -120,7 +120,7 @@ setInterval(function(){
    IOwater.writeSync(ctrlData.water);
    IOalarm.writeSync(ctrlData.alarm);
 
-   getCtrlData("House1");
+   getCtrlData("House2");
 
 }, 10000);
 //###########################################################
@@ -138,25 +138,25 @@ setNeighborDeadTimer();
 // Neighbor Dead Timer function
 function setNeighborDeadTimer(){
    neighborDeadTimer = setTimeout(function(){
-      console.log('!!WARNING!! House2 not responding for 30s.');
+      console.log('!!WARNING!! House1 not responding for 30s.');
       var i=1;
-      db.send("AliveCheckByH1");
+      db.send("AliveCheckByH2");
       console.log('Probe '+i+' has been sent.');
       sendProbe = setInterval(function(){
          i++;
          if(i<=3){
             commState.H1H2 = LOW;
-            db.send('AliveCheckByH1');
+            db.send('AliveCheckByH2');
             console.log('Probe '+i+' has been sent.');
          }else if(i>3 && i<6){
             commState.H1H2 = LOW;
-            db.messages['H2StateByH1'].signals['state'].update(commState.H1H2);
-            db.send('H2AskingByH1');
+            db.messages['H1StateByH2'].signals['state'].update(commState.H1H2);
+            db.send('H1AskingByH2');
             console.log('Probe '+(i-3)+' has been sent to the Fog.');
          }else if(i>=6){
-            commState.H2Fog = LOW;
+            commState.H1Fog = LOW;
             clearInterval(sendProbe);
-            emergentOper("House2");
+            emergentOper("House1");
          };
       }, 10000);
    }, 30000);   
@@ -164,7 +164,7 @@ function setNeighborDeadTimer(){
 
 
 //심장박동
-db.messages["House2Temp"].signals["temperature2"].onUpdate(function(s){
+db.messages["House1Temp"].signals["temperature2"].onUpdate(function(s){
    if(commState.H1H2 == LOW){
       commState.H1H2 = HIGH;
    }
@@ -180,37 +180,37 @@ function emergentOper(houseName){
    console.log('House'+houseNum+' is dead!! emergency motor is ON!!');
 }
 
-db.messages["AliveCheckByH2"].signals["nodeID"].onUpdate(function(){
-   console.log('Edge2 sent aliveCheck. Answer is sent. ');
-   db.send("AliveAnsByH1");
+db.messages["AliveCheckByH1"].signals["nodeID"].onUpdate(function(){
+   console.log('Edge1 sent aliveCheck. Answer is sent. ');
+   db.send("AliveAnsByH2");
 });
 
-db.messages['AliveAnsByH2'].signals['nodeID'].onUpdate(function(){
+db.messages['AliveAnsByH1'].signals['nodeID'].onUpdate(function(){
    commState.H1H2 = HIGH;
    clearInterval(sendProbe);
    ctrlData[5] = LOW;
-   console.log('House2 is recovered. Emergency motor is OFF');
+   console.log('House1 is recovered. Emergency motor is OFF');
    setNeighborDeadTimer();
 });
 
-db.messages['H2StateByFog'].signals['state'].onUpdate(function(s){
-   console.log('H2StateByFog: '+s.value);
-   commState.H2Fog = s.value;
-   if(commState.H2Fog == HIGH){
+db.messages['H1StateByFog'].signals['state'].onUpdate(function(s){
+   console.log('H1StateByFog: '+s.value);
+   commState.H1Fog = s.value;
+   if(commState.H1Fog == HIGH){
       console.log('House1-House2 CAN communication error.');
       clearInterval(sendProbe);
-   }else if(commState.H2Fog == LOW){
-      console.log('House2 is in blackout.');
+   }else if(commState.H1Fog == LOW){
+      console.log('House1 is in blackout.');
       clearInterval(sendProbe);
-      emergentOper("House2");
+      emergentOper("House1");
    }else{
-      console.log('H2StateByFog answer value wrong.');
+      console.log('H1StateByFog answer value wrong.');
    }
 });
 
-db.messages['H2AskingByFog'].signals['nodeID'].onUpdate(function(){
-   db.messages['H2StateByH1'].signals['state'].update(commState.H1H2);
-   db.send('H2StateByH1');
+db.messages['H1AskingByFog'].signals['nodeID'].onUpdate(function(){
+   db.messages['H1StateByH2'].signals['state'].update(commState.H1H2);
+   db.send('H1StateByH2');
 });
 
 db.messages['AliveCheckH2ByFog'].signals['nodeID'].onUpdate(function(){
@@ -218,19 +218,19 @@ db.messages['AliveCheckH2ByFog'].signals['nodeID'].onUpdate(function(){
    db.send('AliveAnsToFogByH2');
 });
 
-db.messages['timeSyncReqToH1'].signals['msgNum'].onUpdate(function(s){
+db.messages['timeSyncReqToH2'].signals['msgNum'].onUpdate(function(s){
    var msgNumImsi = s.value;
    if(msgNum==msgNumImsi){
       var edgeReturnTime = timeGetter.nowMilli();
       var rtt = edgeReturnTime - edgeDepTime;
       var oneWayDelay = Math.round(rtt / 2.0);
       var estimatedFogArrTime = edgeDepTime+oneWayDelay;
-      var fogArrTime = db.messages['timeSyncReqToH1'].signals['fogTime'].value;
+      var fogArrTime = db.messages['timeSyncReqToH2'].signals['fogTime'].value;
       var timeDifference = estimatedFogArrTime - fogArrTime;
       edgeDepTimeCalib = edgeDepTime - timeDifference;
-      db.messages['timeSyncResH1'].signals['edgeDepTimeCalib'].update(edgeDepTimeCalib);
-      db.messages['timeSyncResH1'].signals['msgNum'].update(msgNum);
-      db.send('timeSyncResH1');
+      db.messages['timeSyncResH2'].signals['edgeDepTimeCalib'].update(edgeDepTimeCalib);
+      db.messages['timeSyncResH2'].signals['msgNum'].update(msgNum);
+      db.send('timeSyncResH2');
    }
 });
 
