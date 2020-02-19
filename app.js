@@ -46,42 +46,42 @@ var edgeDepTimeCalib = 0;
 var sensor = {
    sensors: [
       {
-         name: "House2Sen1",
+         name: "House1Sen1",
          type: 22,
          pin: 2,
          temperature: 0,
          humidity: ""
       },
       {
-         name: "House2Sen2",
+         name: "House1Sen2",
          type: 22,
          pin: 3,
          temperature: 0,
          humidity: ""
       },
       {
-         name: "House2Sen3",
+         name: "House1Sen3",
          type: 22,
          pin: 4,
          temperature: 0,
          humidity: ""
       },
       {
-         name: "House2Sen4",
+         name: "House1Sen4",
          type: 22,
          pin: 17,
          temperature: 0,
          humidity: ""
       },
       {
-         name: "House2Sen5",
+         name: "House1Sen5",
          type: 22,
          pin: 27,
          temperature: 0,
          humidity: ""
       },
       {
-         name: "House2Sen6",
+         name: "House1Sen6",
          type: 22,
          pin: 22,
          temperature: 0,
@@ -111,7 +111,7 @@ setInterval(function(){
    }
 
    //Control Data
-   console.log('House2 fan1:'+ctrlData[0]);
+   console.log('House1 fan1:'+ctrlData[0]);
 
    //콘트롤 데이터 확인하여, 제어출력
    IOfan1.writeSync(ctrlData.fan1);
@@ -123,12 +123,6 @@ setInterval(function(){
    getCtrlData("House1");
 
 }, 10000);
-//###########################################################
-//#########################Time Sync#########################
-
-// db.messages['timeSyncResFogH2'].signals['sigTime'].onUpdate(function(s){
-   
-// });
 
 //###########################################################
 //########################Resilience#########################
@@ -213,9 +207,9 @@ db.messages['H2AskingByFog'].signals['nodeID'].onUpdate(function(){
    db.send('H2StateByH1');
 });
 
-db.messages['AliveCheckH2ByFog'].signals['nodeID'].onUpdate(function(){
+db.messages['AliveCheckH1ByFog'].signals['nodeID'].onUpdate(function(){
    console.log('Fog sent aliveCheck. Answer is sent.');
-   db.send('AliveAnsToFogByH2');
+   db.send('AliveAnsToFogByH1');
 });
 
 db.messages['timeSyncReqToH1'].signals['msgNum'].onUpdate(function(s){
@@ -229,13 +223,15 @@ db.messages['timeSyncReqToH1'].signals['msgNum'].onUpdate(function(s){
       var timeDifference = estimatedFogArrTime - fogArrTime;
       edgeDepTimeCalib = edgeDepTime - timeDifference;
       db.messages['timeSyncResH1'].signals['edgeDepTimeCalib'].update(edgeDepTimeCalib);
+      
+      console.log('edgeDepTime after adjusted: '+edgeDepTimeCalib);
       db.messages['timeSyncResH1'].signals['msgNum'].update(msgNum);
       db.send('timeSyncResH1');
    }
 });
 
-//###########################################################
-//########################Functions to call##################
+//###################################################################
+//########################Functions to call##########################
 
 function putSensorData(houseName){
    var houseTemp = houseName + "Temp";
